@@ -127,11 +127,12 @@ label_ner[-3] = 'SEP'
 # 标签到id的映射
 {'Empty': 21128, '丈夫': 21129, '上映时间': 21130, '专业代码': 21131, '主持人': 21132, '主演': 21133, '主角': 21134, '人口数量': 21135, '作曲': 21136, '作者': 21137, '作词': 21138, '修业年限': 21139, '出品公司': 21140, '出版社': 21141, '出生地': 21142, '出生日期': 21143, '创始人': 21144, '制片人': 21145, '占地面积': 21146, '号': 21147, '嘉宾': 21148, '国籍': 21149, '妻子': 21150, '字': 21151, '官方语言': 21152, '导演': 21153, '总部地点': 21154, '成立日期': 21155, '所在城市': 21156, '所属专辑': 21157, '改编自': 21158, '朝代': 21159, '歌手': 21160, '母亲': 21161, '毕业院校': 21162, '民族': 21163, '气候': 21164, '注册资本': 21165, '海拔': 21166, '父亲': 21167, '目': 21168, '祖籍': 21169, '简称': 21170, '编剧': 21171, '董事长': 21172, '身高': 21173, '连载网站': 21174, '邮政编码': 21175, '面积': 21176, '首都': 21177}
 
+# 可以加参数--overwrite_cache表示是否覆盖缓存文件
 ./scripts/run_ner.sh
-python main.py --gpus "0," --max_epochs 1 --data_class REDataset --litmodel_class RELitModel --model_class BertForNER --task_name ner --batch_size 16 --model_name_or_path bert-base-chinese --max_seq_length 256 --check_val_every_n_epoch 1 --data_dir ./dataset/ske --overwrite_cache --lr 3e-5
-# 训练SEQ句中关系分类模块
+python main.py --gpus "0," --max_epochs 1 --data_class REDataset --litmodel_class RELitModel --model_class BertForNER --task_name ner --batch_size 16 --model_name_or_path bert-base-chinese --max_seq_length 256 --check_val_every_n_epoch 1 --data_dir ./dataset/ske --lr 3e-5
+# 训练SEQ句中关系分类模块, 使用的cls预测的关系
 ./scripts/run_seq.sh
-python main.py --gpus "0," --max_epochs 5 --num_workers 0 --data_class REDataset --litmodel_class SEQLitModel --model_class BertForRelationClassification --task_name seq --batch_size 16 --model_name_or_path bert-base-chinese --max_seq_length 256 --check_val_every_n_epoch 1 --overwrite_cache --data_dir ./dataset/ske
+python main.py --gpus "0," --max_epochs 5 --num_workers 0 --data_class REDataset --litmodel_class SEQLitModel --model_class BertForRelationClassification --task_name seq --batch_size 16 --model_name_or_path bert-base-chinese --max_seq_length 256 --check_val_every_n_epoch 1 --data_dir ./dataset/ske
 ```
 
 下面使用一个小demo简要展示训练过程，其中仅训练一个batch来加速展示。

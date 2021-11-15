@@ -45,7 +45,7 @@ class BaseDataModule(pl.LightningDataModule):
             "--data_dir", type=str, default="./dataset/ske", help="加载数据集的文件夹"
         )
         parser.add_argument(
-            "--overwrite_cache", action="store_true"
+            "--overwrite_cache", action="store_true", help="是否覆盖缓存文件"
         )
         return parser
 
