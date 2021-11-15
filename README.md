@@ -117,8 +117,8 @@ python setup.py develop
 训练的时候分开训练ner模型和关系分类模型，推理的时候同时使用2个模型进行推理
 ```shell
 # 训练NER命名实体识别模块， B-SUB是头实体，B-OBJ是尾实体  ["O", "B-SUB", "I-SUB", "B-OBJ", "I-OBJ", "Relation", "CLS", "SEP"]
-# 识别识别的类别：     class_label = ['Empty', '丈夫', '上映时间', '专业代码', '主持人', '主演', '主角', '人口数量', '作曲', '作者', '作词', '修业年限', '出品公司', '出版社', '出生地', '出生日期','创始人', '制片人', '占地面积', '号', '嘉宾', '国籍', '妻子', '字', '官方语言', '导演', '总部地点', '成立日期', '所在城市', '所属专辑', '改编自', '朝代', '歌手', '母亲', '毕业院校', '民族', '气候', '注册资本', '海拔', '父亲', '目', '祖籍', '简称', '编剧', '董事长', '身高', '连载网站','邮政编码', '面积', '首都']
-输入内容: CLS + text + SEP + ner的类别的id + SEP
+# 关系的类别：     class_label = ['Empty', '丈夫', '上映时间', '专业代码', '主持人', '主演', '主角', '人口数量', '作曲', '作者', '作词', '修业年限', '出品公司', '出版社', '出生地', '出生日期','创始人', '制片人', '占地面积', '号', '嘉宾', '国籍', '妻子', '字', '官方语言', '导演', '总部地点', '成立日期', '所在城市', '所属专辑', '改编自', '朝代', '歌手', '母亲', '毕业院校', '民族', '气候', '注册资本', '海拔', '父亲', '目', '祖籍', '简称', '编剧', '董事长', '身高', '连载网站','邮政编码', '面积', '首都']
+输入内容: CLS + text + SEP + 关系的id + SEP
 # 标注最后三个字符串，SEP、Relation、SEP
 label_ner[0] = 'CLS'
 label_ner[-1] = 'SEP'
@@ -135,7 +135,7 @@ python main.py --gpus "0," --max_epochs 1 --data_class REDataset --litmodel_clas
 ./scripts/run_seq.sh
 python main.py --gpus "0," --max_epochs 5 --num_workers 0 --data_class REDataset --litmodel_class SEQLitModel --model_class BertForRelationClassification --task_name seq --batch_size 16 --model_name_or_path bert-base-chinese --max_seq_length 256 --check_val_every_n_epoch 1 --data_dir ./dataset/ske
 # 分别复制前2个模型的训练结果到output/ske/ner和output/ske/seq目录，其中pytorch_model.bin是由保存的ckpt文件重命名而成，文件应该包括 added_tokens.json   special_tokens_map.json   tokenizer.json   config.json         pytorch_model.bin   tokenizer_config.json     vocab.txt
-# 推理测试, 推理测试 "姚明出生在中国。"中的实体和关系， 首先预测关系，对所有可能的关系组装成ner格式的模型输入，用ner模型预测实体
+# 推理测试, 推理测试 "姚明出生在中国。"中的实体和关系， 首先预测关系，对所有可能的关系组装成ner格式的输入，输入到ner模型，用ner模型预测实体
 python main.py --gpus "0," --max_epochs 5 --num_workers 0 --data_class REDataset --litmodel_class  INFERLitModel --model_class Inference --task_name interactive --batch_size 16 --model_name_or_path bert-base-chinese --max_seq_length 256 --data_dir ./dataset/ske --seq_model_name_or_path output/ske/seq/ --ner_model_name_or_path output/ske/ner
 ```
 
