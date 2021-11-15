@@ -128,7 +128,8 @@ def main():
     # show the inference function
     if test_only:
         inputs = data.tokenizer("姚明出生在中国。", return_tensors='pt')
-        print(lit_model.inference(inputs))
+        infer_res = lit_model.inference(inputs)
+        print(f'"姚明出生在中国。"的推理结果是{infer_res}' )
 
     trainer.test(lit_model, datamodule=data)
 

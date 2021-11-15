@@ -220,7 +220,7 @@ class Inference(pl.LightningModule):
             num_relations = len(self.label_map_seq.keys())
             max_length = inputs_seq['input_ids'].shape[1]
 
-            # [batch_size, num_relation]
+            # 形状是 [batch_size, num_relation]
             relation_output_sigmoid = outputs_seq[0]
 
             # 多关系预测
@@ -237,22 +237,22 @@ class Inference(pl.LightningModule):
             mask_output = mask_relation_output_sigmoid.view(-1)
 
             # relation 特殊表示，需要拼接 input_ids :[SEP relation]  attention_mask: [1 1] token_type_ids:[1 1]
-            # relation_index shape : [batch_size, num_relations]
+            # relation_index shape : [batch_size, num_relations], self.start_idx表示第一个关系，relation_index是一个关系组成的id的tensor
             relation_index = torch.arange(self.start_idx, self.start_idx+num_relations).to(self.device).expand(batch_size, num_relations)
             # 需要拼接的部分1：REL， 选取拼接的部分 [batch_size * xxx 不定]
             relation_ids = torch.masked_select(relation_index, mask_relation_output_sigmoid.bool())
-            # 需要拼接的部分2：SEP
+            # 需要拼接的部分2：SEP, 用102填充batch_size,1大小的矩阵, cat_sep形状[batch_size,1]
             cat_sep = torch.full((relation_ids.shape[0], 1), 102).long().to(self.device)
-            # 需要拼接的部分3：[1]
+            # 需要拼接的部分3：[1], 用1填充
             cat_one = torch.full((relation_ids.shape[0], 1), 1).long().to(self.device)
-            # 需要拼接的部4：[0]
+            # 需要拼接的部4：[0], 用0填充
             cat_zero = torch.full((relation_ids.shape[0], 1), 0).long().to(self.device)
 
-            # 需要原来的input_ids 扩展到relation num维度。
+            # 需要原来的input_ids 扩展到relation num维度。 eg: input_ids_ner[1,1,10]
             input_ids_ner = torch.unsqueeze(inputs['input_ids'], 1) # [batch_size, 1, seq_length]
-            # [batch_size, 50, max_length], 复制50份
+            # [batch_size, 50, max_length], 复制50份, input_ids_ner变成labels个数个， 这里ner的分类时50种
             input_ids_ner = input_ids_ner.expand(-1, len(self.label_map_seq.keys()), -1)
-            # [batch_size * 50, max_length]
+            # [batch_size * 50, max_length], 合并batch_size * num_relations维度, eg: [50,10]， 10是序列长度
             input_ids_ner_reshape = input_ids_ner.reshape(batch_size * num_relations, max_length)
             # 选择预测正确的所有关系
             mask = mask_output.unsqueeze(dim=1).expand(-1, max_length)  # [batch_size * num_relations, max_length]
@@ -260,9 +260,9 @@ class Inference(pl.LightningModule):
             input_ids = torch.masked_select(input_ids_ner_reshape, mask.bool()).view(-1, max_length)
             # n(选出来的关系数字) * max_length
             # n >> batch_size, 因为一句话中有多个关系
-            # 添加 sep relation_ids 需要增加的东西
+            # 添加 sep relation_ids 需要增加的东西, 在第2个维度上堆叠cat_zero， eg： [24,11]
             input_ids = torch.cat((input_ids, cat_zero), 1)
-            input_ids_ner = torch.cat((input_ids, cat_zero), 1)
+            input_ids_ner = torch.cat((input_ids, cat_zero), 1)  # eg [24,12]
 
             # 利用attention中1的求和的到rel_pos的位置
             attention_mask_ner = torch.unsqueeze(inputs['attention_mask'], 1)
@@ -284,7 +284,7 @@ class Inference(pl.LightningModule):
             rel_pos_mask = one_hot.index_select(0, rel_pos)
             rel_pos_mask_plus = one_hot.index_select(0, rel_pos+1)
 
-            # 拼接input_ids的输入
+            # 拼接input_ids的输入, 变成ner格式的输入
             input_ids_ner[rel_pos_mask.bool()] = relation_ids
             input_ids_ner[rel_pos_mask_plus.bool()] = cat_sep.squeeze()
 
@@ -453,7 +453,7 @@ class Inference(pl.LightningModule):
 
     @staticmethod
     def add_to_argparse(parser):
-        parser.add_argument("--seq_model_name_or_path", type=str, default="seq_model")
-        parser.add_argument("--ner_model_name_or_path", type=str, default="ner_model")
+        parser.add_argument("--seq_model_name_or_path", type=str, default="seq_model", help="推理时的关系分类模型的路径")
+        parser.add_argument("--ner_model_name_or_path", type=str, default="ner_model",help="推理时的实体识别模型的路径")
         
         return parser
