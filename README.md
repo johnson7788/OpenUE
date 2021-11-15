@@ -134,8 +134,9 @@ python main.py --gpus "0," --max_epochs 1 --data_class REDataset --litmodel_clas
 # 训练SEQ句中关系分类模块, 使用的cls预测的关系
 ./scripts/run_seq.sh
 python main.py --gpus "0," --max_epochs 5 --num_workers 0 --data_class REDataset --litmodel_class SEQLitModel --model_class BertForRelationClassification --task_name seq --batch_size 16 --model_name_or_path bert-base-chinese --max_seq_length 256 --check_val_every_n_epoch 1 --data_dir ./dataset/ske
+# 分别复制前2个模型的训练结果到output/ske/ner和output/ske/seq目录，其中pytorch_model.bin是由保存的ckpt文件重命名而成，文件应该包括 added_tokens.json   special_tokens_map.json   tokenizer.json   config.json         pytorch_model.bin   tokenizer_config.json     vocab.txt
 # 推理测试, 推理测试 "姚明出生在中国。"中的实体和关系， 首先预测关系，对所有可能的关系组装成ner格式的模型输入，用ner模型预测实体
-python main.py --gpus "0," --max_epochs 5 --num_workers 0 --data_class REDataset --litmodel_class  INFERLitModel --model_class Inference --task_name interactive --batch_size 16 --model_name_or_path bert-base-chinese --max_seq_length 256 --data_dir ./dataset/ske --seq_model_name_or_path output/ske/seq/seq.ckpt --ner_model_name_or_path output/ske/ner/ner.ckpt
+python main.py --gpus "0," --max_epochs 5 --num_workers 0 --data_class REDataset --litmodel_class  INFERLitModel --model_class Inference --task_name interactive --batch_size 16 --model_name_or_path bert-base-chinese --max_seq_length 256 --data_dir ./dataset/ske --seq_model_name_or_path output/ske/seq/ --ner_model_name_or_path output/ske/ner
 ```
 
 下面使用一个小demo简要展示训练过程，其中仅训练一个batch来加速展示。
