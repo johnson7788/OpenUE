@@ -10,6 +10,7 @@ import yaml
 import time
 from openue.lit_models import MyTrainer
 import os
+
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 
@@ -21,7 +22,7 @@ def _import_class(module_and_class_name: str) -> type:
     module_name, class_name = module_and_class_name.rsplit(".", 1)
     module = importlib.import_module(module_name)
     class_ = getattr(module, class_name)
-	
+
     return class_
 
 
@@ -31,10 +32,10 @@ def _setup_parser():
 
     # Add Trainer specific arguments, such as --max_epochs, --gpus, --precision
     trainer_parser = pl.Trainer.add_argparse_args(parser)
-    trainer_parser._action_groups[1].title = "Trainer Args"  # pylint: disable=protected-access
+    trainer_parser._action_groups[1].title = "训练的参数"  # pylint: disable=protected-access
     parser = argparse.ArgumentParser(add_help=False, parents=[trainer_parser])
 
-    # Basic arguments
+    #基本的参数
     parser.add_argument("--wandb", action="store_true", default=False)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--litmodel_class", type=str, default="SEQLitModel")
@@ -42,7 +43,7 @@ def _setup_parser():
     parser.add_argument("--model_class", type=str, default="bert.BertForSequenceClassification")
     parser.add_argument("--load_checkpoint", type=str, default=None)
 
-    # Get the data and model classes, so that we can add their specific arguments
+    # 获取数据和模型类，以便我们可以添加它们的具体参数, 使用importlib加载模型
     temp_args, _ = parser.parse_known_args()
     data_class = _import_class(f"openue.data.{temp_args.data_class}")
     model_class = _import_class(f"openue.models.{temp_args.model_class}")
@@ -53,12 +54,13 @@ def _setup_parser():
 
     model_group = parser.add_argument_group("Model Args")
     model_class.add_to_argparse(model_group)
-
+    #学习率和优化器等参数
     lit_model_group = parser.add_argument_group("LitModel Args")
     lit_models.BaseLitModel.add_to_argparse(lit_model_group)
 
     parser.add_argument("--help", "-h", action="help")
     return parser
+
 
 def _save_model(litmodel, tokenizer, path):
     os.system(f"mkdir -p {path}")
@@ -67,9 +69,7 @@ def _save_model(litmodel, tokenizer, path):
     litmodel.config.save_pretrained(path)
 
 
-
 def main():
-
     parser = _setup_parser()
     args = parser.parse_args()
 
@@ -80,9 +80,9 @@ def main():
     if not os.path.exists(os.path.join("config", day_name)):
         os.mkdir(os.path.join("config", time.strftime("%Y-%m-%d")))
     config = vars(args)
+    print(f"备份配置文件到config/{day_name}/{config_file_name}文件中")
     with open(os.path.join(os.path.join("config", day_name), config_file_name), "w") as file:
         file.write(yaml.dump(config))
-
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
     data_class = _import_class(f"openue.data.{args.data_class}")
@@ -92,55 +92,49 @@ def main():
     data = data_class(args)
 
     lit_model = litmodel_class(args=args, data_config=data.get_config())
-
-
+    # 保存的日志
     logger = pl.loggers.TensorBoardLogger("training/logs")
     if args.wandb:
         logger = pl.loggers.WandbLogger(project="dialogue_pl")
         logger.log_hyperparams(vars(args))
+    #早停的配置
     early_callback = pl.callbacks.EarlyStopping(monitor="Eval/f1", mode="max", patience=5)
+    #模型的保存位置， eg：  output/ske/ner/, 例如args.task_name 是ner的话
     model_checkpoint = pl.callbacks.ModelCheckpoint(monitor="Eval/f1", mode="max",
-        filename=args.data_dir.split("/")[-1] +'/'+ args.task_name + r'/{epoch}-{Eval/f1:.2f}',
-        dirpath="output",
-        save_weights_only=True
-    )
-
+                                                    filename=args.data_dir.split("/")[
+                                                                 -1] + '/' + args.task_name + r'/{epoch}-{Eval/f1:.2f}',
+                                                    dirpath="output",
+                                                    save_weights_only=True
+                                                    )
 
     callbacks = [early_callback, model_checkpoint]
 
-    # args.weights_summary = "full"  # Print full summary of the model
+    # args.weights_summary = "full"  # 打印该模型的完整summary
     trainer = pl.Trainer.from_argparse_args(args, callbacks=callbacks, logger=logger, default_root_dir="training/logs")
-    
-    
-    test_only = "interactive" in args.task_name 
 
-    if not test_only: trainer.fit(lit_model, datamodule=data)
-
-
-
+    test_only = "interactive" in args.task_name
+    # 如果不是测试模式，那么开始训练模型
+    if not test_only:
+        trainer.fit(lit_model, datamodule=data)
 
     # two steps
-
+    # 模型的路径
     path = model_checkpoint.best_model_path
 
-   
-
     # make sure the litmodel is the best model in dev
-    if not test_only: lit_model.load_state_dict(torch.load(path)["state_dict"])
+    if not test_only:
+        lit_model.load_state_dict(torch.load(path)["state_dict"])
 
     # show the inference function
     if test_only:
         inputs = data.tokenizer("姚明出生在中国。", return_tensors='pt')
         print(lit_model.inference(inputs))
 
-
     trainer.test(lit_model, datamodule=data)
-    
+
     if hasattr(lit_model.model, "save_pretrained"):
         _save_model(lit_model, data.tokenizer, path.rsplit("/", 1)[0])
-    
 
 
 if __name__ == "__main__":
-
     main()

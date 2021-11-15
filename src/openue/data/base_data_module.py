@@ -36,13 +36,13 @@ class BaseDataModule(pl.LightningDataModule):
     @staticmethod
     def add_to_argparse(parser):
         parser.add_argument(
-            "--batch_size", type=int, default=BATCH_SIZE, help="Number of examples to operate on per forward step."
+            "--batch_size", type=int, default=BATCH_SIZE, help="每个forward step要操作的例子的数量。"
         )
         parser.add_argument(
-            "--num_workers", type=int, default=NUM_WORKERS, help="Number of additional processes to load data."
+            "--num_workers", type=int, default=NUM_WORKERS, help="加载数据的额外进程的数量。"
         )
         parser.add_argument(
-            "--data_dir", type=str, default="./dataset/ske", help="Number of additional processes to load data."
+            "--data_dir", type=str, default="./dataset/ske", help="加载数据集的文件夹"
         )
         parser.add_argument(
             "--overwrite_cache", action="store_true"

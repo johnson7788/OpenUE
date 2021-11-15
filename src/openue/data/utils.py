@@ -248,11 +248,11 @@ if is_torch_available():
                     logger.info(f"Loading example from dataset file at {data_dir}")
                     examples = torch.load(cached_examples_file)
                 else:
-                    logger.info(f"Creating example from cached file {cached_examples_file}")
+                    logger.info(f"不存在缓存数据，创建缓存文件{cached_examples_file}")
                     examples = read_examples_from_file(data_dir, mode)
                     torch.save(examples, cached_examples_file)
 
-                logger.info(f"Creating features from dataset file at {data_dir}")
+                logger.info(f"根据数据集文件创建特征，保存到 {data_dir}")
                 if task == 'seq':
                     self.features = convert_examples_to_seq_features(
                         examples,
@@ -298,7 +298,7 @@ if is_torch_available():
                         rel2id=rel2id
                     )
 
-                logger.info(f"Saving features into cached file {cached_features_file}")
+                logger.info(f"保存特征缓存文件到 {cached_features_file}")
                 torch.save(self.features, cached_features_file)
 
         def __len__(self):
@@ -328,7 +328,7 @@ def read_examples_from_file(data_dir, mode: Union[Split, str]) -> List[InputExam
 
             examples.append(InputExample(text_id=text_id, words=text, triples=triples))
             text_id = text_id + 1
-
+    print(f"共收集到数据{len(examples)}条，每个数据包含至少一个三元组")
     return examples
 
 
@@ -402,7 +402,7 @@ def convert_examples_to_ner_features(
     sequence_a_segment_id=0,
     mask_padding_with_zero=True,
 ):
-    # 将relation ids转化为特殊字符对应的ids,避免了relation 表示和原来的词表进行冲突
+    # 将relation ids转化为特殊字符对应的ids,避免了relation 表示和原来的词表进行冲突， 作为单词的一个token id
     start_idx = tokenizer("[relation0]", add_special_tokens=False)['input_ids'][0]
     label_map_seq = {label: i for i, label in enumerate(labels_seq)}
     seq_label2ids = {label: i+start_idx for i, label in enumerate(labels_seq)}
@@ -423,9 +423,9 @@ def convert_examples_to_ner_features(
         # 用bert分词，转换为token
         # text = example.text
         if ex_index % 10_000 == 0:
-            logger.info("Writing example %d of %d", ex_index, len(examples))
+            logger.info("开始处理样本 %d of %d", ex_index, len(examples))
         
-
+        # 文本内容
         text = example.words
         
         tmp_triples = {}
@@ -450,7 +450,7 @@ def convert_examples_to_ner_features(
             relation = triple[1]
             object_list = triple[2]
             
-            # same entity map as subject and object            
+            # 实体1和实体2都是相同的名字时，属于困难样本
             if set(subject_list) & set(object_list) :
                 hard_to_solve += 1
 
@@ -490,8 +490,9 @@ def convert_examples_to_ner_features(
                     break
                 label_ner[start_idx: end_idx] = ['I-SUB' for i in range(len(subject_ids))]
                 label_ner[start_idx] = 'B-SUB'
-
-            if continue_flag: continue
+            # 如果语料有问题，那么跳过这条数据
+            if continue_flag:
+                continue
             # 标注object
             
             for object_ in object_list:
@@ -542,7 +543,7 @@ def convert_examples_to_ner_features(
 
     
     print('语料有问题句子比例是', str(counter/len(examples)))
-    logger.warning(f"hard to solve total {hard_to_solve} samples. Write code to fix it!")
+    logger.warning(f"困难样本的数量是 {hard_to_solve} 个. Write code to fix it!")
     return features
 
 
