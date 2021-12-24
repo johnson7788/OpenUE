@@ -402,9 +402,10 @@ def convert_examples_to_ner_features(
     sequence_a_segment_id=0,
     mask_padding_with_zero=True,
 ):
-    # 将relation ids转化为特殊字符对应的ids,避免了relation 表示和原来的词表进行冲突， 作为单词的一个token id
+    # 将relation ids转化为特殊字符对应的ids,避免了relation 表示和原来的词表进行冲突， 作为单词的一个token id, start_idx 返回一个索引 eg： 21128，即token的id
     start_idx = tokenizer("[relation0]", add_special_tokens=False)['input_ids'][0]
     label_map_seq = {label: i for i, label in enumerate(labels_seq)}
+    # 每种关系对应的id, seq_label2ids： {'Empty': 21128, '丈夫': 21129, '上映时间': 21130, '专业代码': 21131, '主持人': 21132, '主演': 21133, '主角': 21134, '人口数量': 21135, '作曲': 21136, '作者': 21137, '作词': 21138, '修业年限': 21139, '出品公司': 21140, '出版社': 21141, '出生地': 21142, '出生日期': 21143, '创始人': 21144, '制片人': 21145, '占地面积': 21146, '号': 21147, '嘉宾': 21148, '国籍': 21149, '妻子': 21150, '字': 21151, '官方语言': 21152, '导演': 21153, '总部地点': 21154, '成立日期': 21155, '所在城市': 21156, '所属专辑': 21157, '改编自': 21158, '朝代': 21159, '歌手': 21160, '母亲': 21161, '毕业院校': 21162, '民族': 21163, '气候': 21164, '注册资本': 21165, '海拔': 21166, '父亲': 21167, '目': 21168, '祖籍': 21169, '简称': 21170, '编剧': 21171, '董事长': 21172, '身高': 21173, '连载网站': 21174, '邮政编码': 21175, '面积': 21176, '首都': 21177}
     seq_label2ids = {label: i+start_idx for i, label in enumerate(labels_seq)}
     label_map_ner = {label: i for i, label in enumerate(labels_ner)}
 
@@ -465,7 +466,7 @@ def convert_examples_to_ner_features(
                 max_length=max_seq_length-2,
                 truncation="longest_first"
             )
-
+            # eg: relation: '主演'
             inputs['token_type_ids'] = tokenizer.create_token_type_ids_from_sequences(inputs['input_ids'][1:-1],
                                                                                        [seq_label2ids[relation]])
             # label_map_seq[relation] 加入关系信息, 使用seq_label2ids

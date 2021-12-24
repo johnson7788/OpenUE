@@ -31,7 +31,7 @@ class REDataset(BaseDataModule):
         if add_flag:
             relation_tokens = [f"[relation{i}]" for i in range(num_relations)]
             num_added_tokens = self.tokenizer.add_special_tokens({'additional_special_tokens': relation_tokens})
-            logger.info(f"添加特殊token到tokenizer中: {num_added_tokens} \n {relation_tokens}")
+            logger.info(f"添加特殊token到tokenizer中: {num_added_tokens}个 \n {relation_tokens}")
 
     def setup(self, stage=None):
         self.data_train = get_dataset("train", self.args, self.tokenizer)
